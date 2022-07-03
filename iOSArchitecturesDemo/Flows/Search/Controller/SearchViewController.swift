@@ -10,17 +10,37 @@ import UIKit
 
 final class SearchViewController: UIViewController {
     
+    // MARK: - Properties
+    
+    var searchResults = [ITunesApp]() {
+        didSet {
+            searchView.tableView.isHidden = false
+            searchView.tableView.reloadData()
+            searchView.searchBar.resignFirstResponder()
+        }
+    }
+    
     // MARK: - Private Properties
+    
+    private let presenter: SearchViewOutput
     
     private var searchView: SearchView {
         return self.view as! SearchView
     }
     
-    private let searchService = ITunesSearchService()
-    private var searchResults = [ITunesApp]()
-    
     private struct Constants {
         static let reuseIdentifier = "reuseId"
+    }
+    
+    // MARK: - Construction
+    
+    init(presenter: SearchViewOutput) {
+        self.presenter = presenter
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
     
     // MARK: - Lifecycle
@@ -42,56 +62,6 @@ final class SearchViewController: UIViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         self.throbber(show: false)
-    }
-    
-    // MARK: - Private
-    
-    private func throbber(show: Bool) {
-        UIApplication.shared.isNetworkActivityIndicatorVisible = show
-    }
-    
-    private func showError(error: Error) {
-        let alert = UIAlertController(title: "Error", message: "\(error.localizedDescription)", preferredStyle: .alert)
-        let actionOk = UIAlertAction(title: "OK", style: .cancel, handler: nil)
-        alert.addAction(actionOk)
-        self.present(alert, animated: true, completion: nil)
-    }
-    
-    private func showNoResults() {
-        self.searchView.emptyResultView.isHidden = false
-    }
-    
-    private func hideNoResults() {
-        self.searchView.emptyResultView.isHidden = true
-    }
-    
-    private func requestApps(with query: String) {
-        self.throbber(show: true)
-        self.searchResults = []
-        self.searchView.tableView.reloadData()
-        
-        self.searchService.getApps(forQuery: query) { [weak self] result in
-            guard let self = self else { return }
-            self.throbber(show: false)
-            result
-                .withValue { apps in
-                    guard !apps.isEmpty else {
-                        self.searchResults = []
-                        self.showNoResults()
-                        return
-                    }
-                    self.hideNoResults()
-                    self.searchResults = apps
-                    
-                    self.searchView.tableView.isHidden = false
-                    self.searchView.tableView.reloadData()
-                    
-                    self.searchView.searchBar.resignFirstResponder()
-                }
-                .withError {
-                    self.showError(error: $0)
-                }
-        }
     }
 }
 
@@ -118,11 +88,8 @@ extension SearchViewController: UITableViewDataSource {
 extension SearchViewController: UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
         let app = searchResults[indexPath.row]
-        let appDetaillViewController = AppDetailViewController()
-        appDetaillViewController.app = app
-        navigationController?.pushViewController(appDetaillViewController, animated: true)
+        presenter.viewDidSelectApp(app)
     }
 }
 
@@ -138,6 +105,28 @@ extension SearchViewController: UISearchBarDelegate {
             searchBar.resignFirstResponder()
             return
         }
-        self.requestApps(with: query)
+
+        presenter.viewDidSearch(with: query)
+    }
+}
+
+extension SearchViewController: SearchViewInput {
+    func throbber(show: Bool) {
+        UIApplication.shared.isNetworkActivityIndicatorVisible = show
+    }
+    
+    func showError(error: Error) {
+        let alert = UIAlertController(title: "Error", message: "\(error.localizedDescription)", preferredStyle: .alert)
+        let actionOk = UIAlertAction(title: "OK", style: .cancel, handler: nil)
+        alert.addAction(actionOk)
+        self.present(alert, animated: true, completion: nil)
+    }
+    
+    func showNoResults() {
+        self.searchView.emptyResultView.isHidden = false
+    }
+    
+    func hideNoResults() {
+        self.searchView.emptyResultView.isHidden = true
     }
 }
