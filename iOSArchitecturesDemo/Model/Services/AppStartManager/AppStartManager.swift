@@ -17,22 +17,54 @@ final class AppStartManager {
     }
     
     func start() {
-        let rootVC = SearchModuleBuilder.build()
-        rootVC.navigationItem.title = "Search via iTunes"
+        let appSearchRootVC = SearchBuilder.build()
+        appSearchRootVC.navigationItem.title = "Search for apps"
+        var appImage = UIImage()
         
-        let navVC = self.configuredNavigationController
-        navVC.viewControllers = [rootVC]
+        if #available(iOS 13.0, *) {
+            appImage = UIImage(systemName: "apps.iphone") ?? UIImage()
+        }
         
-        window?.rootViewController = navVC
+        let appSearchVC = createNavController(for: appSearchRootVC,
+                                           title: "Apps",
+                                           image: appImage
+        )
+        
+        let songsSearchRootVC = SearchSongsBuilder.build()
+        songsSearchRootVC.navigationItem.title = "Search for songs"
+        var songsImage = UIImage()
+        
+        if #available(iOS 13.0, *) {
+            songsImage = UIImage(systemName: "music.note") ?? UIImage()
+        }
+        
+        let songsSearchVC = createNavController(for: songsSearchRootVC,
+                                                   title: "Songs",
+                                                   image: songsImage
+        )
+        
+        
+        let tabBarVC = TabBarController()
+        tabBarVC.viewControllers = [appSearchVC, songsSearchVC]
+        
+        window?.rootViewController = tabBarVC
         window?.makeKeyAndVisible()
     }
     
-    private lazy var configuredNavigationController: UINavigationController = {
-        let navVC = UINavigationController()
-        navVC.navigationBar.barTintColor = UIColor.varna
-        navVC.navigationBar.isTranslucent = false
-        navVC.navigationBar.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
-        navVC.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
-        return navVC
-    }()
+    
+    // Создаём Navigation контроллер по переданным параметрам
+    private func createNavController(for rootViewController: UIViewController,
+                                     title: String,
+                                     image: UIImage) -> UIViewController {
+        let navController = UINavigationController(rootViewController: rootViewController)
+        navController.navigationBar.barTintColor = UIColor.varna
+        navController.navigationBar.isTranslucent = false
+        navController.navigationBar.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
+        navController.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
+        navController.tabBarItem.title = title
+        navController.tabBarItem.image = image
+        navController.navigationBar.tintColor = .black
+        return navController
+    }
 }
+

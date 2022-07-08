@@ -1,14 +1,14 @@
 //
-//  SearchView.swift
+//  SearchSongView.swift
 //  iOSArchitecturesDemo
 //
-//  Created by Evgeny Kireev on 02/06/2019.
-//  Copyright © 2019 ekireev. All rights reserved.
+//  Created by Евгений Доброволец on 08.07.2022.
+//  Copyright © 2022 ekireev. All rights reserved.
 //
 
 import UIKit
 
-final class SearchView: UIView {
+final class SearchSongView: UIView {
     
     // MARK: - Subviews
     
@@ -92,3 +92,6 @@ final class SearchView: UIView {
             ])
     }
 }
+
+
+

@@ -2,14 +2,14 @@
 //  SearchPresenter.swift
 //  iOSArchitecturesDemo
 //
-//  Created by Евгений Доброволец on 03.07.2022.
+//  Created by Евгений Доброволец on 08.07.2022.
 //  Copyright © 2022 ekireev. All rights reserved.
 //
 
 import Foundation
 import UIKit
 
-protocol SearchViewInput: class {
+protocol SearchViewInput: AnyObject {
     var searchResults: [ITunesApp] { get set }
     
     func showError(error: Error)
@@ -18,41 +18,41 @@ protocol SearchViewInput: class {
     func throbber(show: Bool)
 }
 
-protocol SearchViewOutput: class {
+protocol SearchViewOutput: AnyObject {
     func viewDidSearch(with query: String)
-    func viewDidSelectApp(_ app: ITunesApp)
+    func viewDidSelectApp(app: ITunesApp)
 }
 
 class SearchPresenter {
     
     weak var viewInput: (UIViewController & SearchViewInput)?
-    
     private let searchService = ITunesSearchService()
     
     private func requestApps(with query: String) {
-        self.searchService.getApps(forQuery: query) { [weak self] result in
-            guard let self = self else {
-                return
-            }
+        searchService.getApps(forQuery: query) { [weak self] (result) in
+            guard let self = self else { return }
             
             self.viewInput?.throbber(show: false)
-            result.withValue { apps in
+            switch result {
+            case .success(let apps):
                 guard !apps.isEmpty else {
+                    self.viewInput?.searchResults = []
                     self.viewInput?.showNoResults()
                     return
                 }
                 self.viewInput?.hideNoResults()
                 self.viewInput?.searchResults = apps
-            } .withError {
-                self.viewInput?.showError(error: $0)
+            case .failure(let error):
+                self.viewInput?.showError(error: error)
             }
         }
     }
     
-    private func openAppDetails(with app: ITunesApp) {
-        let appDetailsViewController = AppDetailViewController(app: app)
-        viewInput?.navigationController?.pushViewController(appDetailsViewController, animated: true)
+    private func openDetails(with app: ITunesApp) {
+        let appDetaillViewController = AppDetailViewController(app: app)
+        viewInput?.navigationController?.pushViewController(appDetaillViewController, animated: true)
     }
+    
 }
 
 extension SearchPresenter: SearchViewOutput {
@@ -61,7 +61,8 @@ extension SearchPresenter: SearchViewOutput {
         requestApps(with: query)
     }
     
-    func viewDidSelectApp(_ app: ITunesApp) {
-        openAppDetails(with: app)
+    func viewDidSelectApp(app: ITunesApp) {
+        openDetails(with: app)
     }
 }
+

@@ -2,8 +2,8 @@
 //  AppDetailViewController.swift
 //  iOSArchitecturesDemo
 //
-//  Created by ekireev on 20.02.2018.
-//  Copyright © 2018 ekireev. All rights reserved.
+//  Created by Евгений Доброволец on 08.07.2022.
+//  Copyright © 2022 ekireev. All rights reserved.
 //
 
 import UIKit
@@ -12,9 +12,15 @@ final class AppDetailViewController: UIViewController {
     
     public var app: ITunesApp
     
-    lazy var headerViewController = AppDetailHeaderViewController(app: self.app)
+    private lazy var headerViewController = AppDetailHeaderViewController(app: app)
+    private lazy var whatsNewViewController = AppWhatsNewViewController(app: app)
+    private lazy var screenshotsViewController = AppScreenshotsViewController(app: app)
     
-    // MARK: - Lifecycle
+    private let imageDownloader = ImageDownloader()
+    
+    private var appDetailView: AppDetailView {
+        return self.view as! AppDetailView
+    }
     
     init(app: ITunesApp) {
         self.app = app
@@ -25,10 +31,18 @@ final class AppDetailViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
     
+    // MARK: - Lifecycle
+    
+    override func loadView() {
+        super.loadView()
+        self.view = AppDetailView()
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.configureUI()
+        configureUI()
     }
+    
     
     // MARK: - Private
     
@@ -38,18 +52,59 @@ final class AppDetailViewController: UIViewController {
         self.navigationItem.largeTitleDisplayMode = .never
         
         addHeaderViewController()
+        addWhatsNewViewController()
+        addScreenshotsViewController()
     }
     
+    /// Добавляет контроллер заголовка
     private func addHeaderViewController() {
-        addChild(headerViewController)
-        view.addSubview(headerViewController.view)
-        headerViewController.didMove(toParent: self)
+        self.addChild(headerViewController)
+        appDetailView.scrollView.addSubview(headerViewController.view)
         
+        headerViewController.didMove(toParent: self)
         headerViewController.view.translatesAutoresizingMaskIntoConstraints = false
+        
         NSLayoutConstraint.activate([
-            self.headerViewController.view.topAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.topAnchor),
-            self.headerViewController.view.leftAnchor.constraint(equalTo: self.view.leftAnchor),
-            self.headerViewController.view.rightAnchor.constraint(equalTo: self.view.rightAnchor)
+            headerViewController.view.topAnchor.constraint(equalTo: appDetailView.scrollView.topAnchor),
+            headerViewController.view.leftAnchor.constraint(equalTo: self.view.leftAnchor),
+            headerViewController.view.rightAnchor.constraint(equalTo: self.view.rightAnchor)
+        ])
+        
+    }
+    
+    /// Добавляет контроллер описания изменений в последней версии
+    private func addWhatsNewViewController() {
+        self.addChild(whatsNewViewController)
+        appDetailView.scrollView.addSubview(whatsNewViewController.view)
+        
+        whatsNewViewController.didMove(toParent: self)
+        whatsNewViewController.view.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            whatsNewViewController.view.topAnchor.constraint(
+                equalTo: headerViewController.view.bottomAnchor, constant: 16
+            ),
+            whatsNewViewController.view.leftAnchor.constraint(equalTo: self.view.leftAnchor),
+            whatsNewViewController.view.rightAnchor.constraint(equalTo: self.view.rightAnchor)
+        ])
+    }
+    
+    /// Добавляет контроллер отображения скриншотов
+    private func addScreenshotsViewController() {
+        self.addChild(screenshotsViewController)
+        appDetailView.scrollView.addSubview(screenshotsViewController.view)
+        
+        screenshotsViewController.didMove(toParent: self)
+        screenshotsViewController.view.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            screenshotsViewController.view.topAnchor.constraint(
+                equalTo: whatsNewViewController.view.bottomAnchor, constant: 16
+            ),
+            screenshotsViewController.view.leftAnchor.constraint(equalTo: self.view.leftAnchor),
+            screenshotsViewController.view.rightAnchor.constraint(equalTo: self.view.rightAnchor),
+            screenshotsViewController.view.bottomAnchor.constraint(equalTo: appDetailView.scrollView.bottomAnchor)
         ])
     }
 }
+
