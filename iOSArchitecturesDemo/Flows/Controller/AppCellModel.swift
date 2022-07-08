@@ -2,8 +2,8 @@
 //  AppCellModel.swift
 //  iOSArchitecturesDemo
 //
-//  Created by Evgeny Kireev on 02/06/2019.
-//  Copyright © 2019 ekireev. All rights reserved.
+//  Created by Евгений Доброволец on 08.07.2022.
+//  Copyright © 2022 ekireev. All rights reserved.
 //
 
 import Foundation
@@ -22,3 +22,4 @@ final class AppCellModelFactory {
                             rating: model.averageRating >>- { "\($0)" })
     }
 }
+
