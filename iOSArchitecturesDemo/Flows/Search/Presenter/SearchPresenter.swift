@@ -9,60 +9,72 @@
 import Foundation
 import UIKit
 
-protocol SearchViewInput: AnyObject {
+protocol SearchViewInput: class {
     var searchResults: [ITunesApp] { get set }
-    
     func showError(error: Error)
     func showNoResults()
     func hideNoResults()
     func throbber(show: Bool)
 }
 
-protocol SearchViewOutput: AnyObject {
+protocol SearchViewOutput: class {
     func viewDidSearch(with query: String)
-    func viewDidSelectApp(app: ITunesApp)
+    func viewDidSelectApp(_ app: ITunesApp)
 }
 
 class SearchPresenter {
     
     weak var viewInput: (UIViewController & SearchViewInput)?
-    private let searchService = ITunesSearchService()
+    
+    // MARK: - Private Properties
+    
+    let interactor: SearchInteractorInput
+    let router: SearchRouterInput
+    
+    // MARK: - Init
+    
+    init(interactor: SearchInteractorInput, router: SearchRouterInput) {
+        self.interactor = interactor
+        self.router = router
+    }
+    
+    // MARK: - Private Functions
     
     private func requestApps(with query: String) {
-        searchService.getApps(forQuery: query) { [weak self] (result) in
-            guard let self = self else { return }
+        interactor.requestApps(with: query) { [weak self] result in
+            guard let self = self else {
+                return
+            }
             
             self.viewInput?.throbber(show: false)
-            switch result {
-            case .success(let apps):
+            result.withValue { apps in
+                
                 guard !apps.isEmpty else {
-                    self.viewInput?.searchResults = []
                     self.viewInput?.showNoResults()
                     return
                 }
                 self.viewInput?.hideNoResults()
                 self.viewInput?.searchResults = apps
-            case .failure(let error):
-                self.viewInput?.showError(error: error)
+            } .withError {
+                self.viewInput?.showError(error: $0)
             }
         }
     }
     
-    private func openDetails(with app: ITunesApp) {
-        let appDetaillViewController = AppDetailViewController(app: app)
-        viewInput?.navigationController?.pushViewController(appDetaillViewController, animated: true)
+    private func openAppDetails(with app: ITunesApp) {
+        router.openDetails(for: app)
     }
-    
 }
+
+// MARK: - SearchViewOutput
 
 extension SearchPresenter: SearchViewOutput {
     func viewDidSearch(with query: String) {
-        viewInput?.throbber(show: true)
-        requestApps(with: query)
+        self.viewInput?.throbber(show: true)
+        self.requestApps(with: query)
     }
     
-    func viewDidSelectApp(app: ITunesApp) {
-        openDetails(with: app)
+    func viewDidSelectApp(_ app: ITunesApp) {
+        self.openAppDetails(with: app)
     }
 }
-
